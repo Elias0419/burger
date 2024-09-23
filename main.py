@@ -71,7 +71,16 @@ class Burger:
 
     def clone(self):
         # print(f'Inside clone function, current ID is {id(self)}')
-        cloned_burger = Burger(self.name, self.price, self.ingredients, added_ingredients = [], removed_ingredients = [], additional_options = [], button_states = {}, additional_options_button_states = {})
+        cloned_burger = Burger(
+            self.name,
+            self.price,
+            self.ingredients,
+            added_ingredients=[],
+            removed_ingredients=[],
+            additional_options=[],
+            button_states={},
+            additional_options_button_states={},
+        )
         # print(f"Cloning burger - new ID: {id(cloned_burger)}")
         return cloned_burger
 
@@ -162,6 +171,8 @@ class Order:
         for burger in self.burgers:
             detail += f"{burger.name}: {burger.display_ingredients()}\n"
         return detail
+
+
 ############################################################################################################################################################
 ############################################################################################################################################################
 ############################################################################################################################################################
@@ -211,7 +222,7 @@ class BurgerApp(MDApp):
                     padding=(50, 50, 50, 50),
                     font_style="H6",
                     markup=True,
-                    size_hint_y=0.8,
+                    size_hint_y=0.9,
                 ),
             )
             setattr(
@@ -223,7 +234,7 @@ class BurgerApp(MDApp):
                     _no_ripple_effect=True,
                     size_hint_y=1,
                     _min_width=200,
-                    _min_height=150,
+                    _min_height=75,
                 ),
             )
             order_layout.add_widget(getattr(self, f"order_{i}"))
@@ -263,83 +274,112 @@ class BurgerApp(MDApp):
         return layout
 
     def open_modify_item_popup(self, burger):
-        layout = MDGridLayout(orientation="tb-lr", rows=2, padding=[10, 10, 10, 10], spacing=10)
-        inner_layout = MDGridLayout(orientation="lr-tb", cols=4, padding=[10, 10, 10, 10], spacing=10)
+        layout = MDGridLayout(
+            orientation="tb-lr", rows=2, padding=[10, 10, 10, 10], spacing=10
+        )
+        inner_layout = MDGridLayout(
+            orientation="lr-tb", cols=4, padding=[10, 10, 10, 10], spacing=10
+        )
         for ingredient in burger.ingredients:
-            ingredient_label, add_button, normal_button, remove_button = self.create_modify_item_row(ingredient)
+            ingredient_label, add_button, normal_button, remove_button = (
+                self.create_modify_item_row(ingredient)
+            )
             inner_layout.add_widget(ingredient_label)
             inner_layout.add_widget(remove_button)
             inner_layout.add_widget(normal_button)
             inner_layout.add_widget(add_button)
             burger.button_states[ingredient] = {
-                'EXTRA': add_button,
-                'NORMAL': normal_button,
-                'NONE': remove_button
+                "EXTRA": add_button,
+                "NORMAL": normal_button,
+                "NONE": remove_button,
             }
         for option in self.get_default_options():
-            default_button, spacer, spacer2, option_button = self.create_default_options_row(option)
+            default_button, spacer, spacer2, option_button = (
+                self.create_default_options_row(option)
+            )
             inner_layout.add_widget(default_button)
             inner_layout.add_widget(option_button)
             inner_layout.add_widget(spacer)
             inner_layout.add_widget(spacer2)
             burger.additional_options_button_states[option] = {
-                'OPTION': option_button,
-                'NONE': default_button,
-                }
+                "OPTION": option_button,
+                "NONE": default_button,
+            }
 
         layout.add_widget(inner_layout)
-        confirm_button = MDFlatButton(text="Confirm", _no_ripple_effect=True, size_hint=(1,0.1), line_color='white',
-                                    on_release=lambda x, burger=burger: self.confirm_modifications(burger=burger))
+        confirm_button = MDFlatButton(
+            text="Confirm",
+            _no_ripple_effect=True,
+            size_hint=(1, 0.1),
+            line_color="white",
+            on_release=lambda x, burger=burger: self.confirm_modifications(
+                burger=burger
+            ),
+        )
         layout.add_widget(confirm_button)
-        self.modify_item_popup = Popup(content=layout, size_hint=(0.4, 0.8), separator_height=0,
-                                    title='Modify ' + burger.name, overlay_color=(0, 0, 0, 0))
+        self.modify_item_popup = Popup(
+            content=layout,
+            size_hint=(0.4, 0.8),
+            separator_height=0,
+
+            title='Modify ' + burger.name,
+            overlay_color=(0, 0, 0, 0),
+        )
         self.modify_item_popup.open()
 
     def confirm_modifications(self, burger):
         order_modifications = {}
-        additional_options = {}
+        additional_options = []
         for ingredient, buttons in burger.button_states.items():
             for modifier, button in buttons.items():
                 if button.is_selected:
                     order_modifications[ingredient] = modifier
-                    button.state = 'normal'
+                    button.state = "normal"
                     break
         for options, butts in burger.additional_options_button_states.items():
-            for something, button in butts.items():
-                print(something, button)
+            # print(options, butts)
+            for option, butt in butts.items():
+                # print(option,butt)
+                if butt.is_selected and option == "OPTION":
+                    burger.additional_options.append(options)
+
         for ingredient, modifier in order_modifications.items():
-            if modifier == 'EXTRA':
+            if modifier == "EXTRA":
                 burger.added_ingredients.append(ingredient)
-            elif modifier == 'NONE':
+            elif modifier == "NONE":
                 burger.removed_ingredients.append(ingredient)
-        # for option, state in
+        # for option in additional_options:
+        #     burger.additional_options.appe
         self.add_item_to_order(burger)
         self.modify_item_popup.dismiss()
         burger.button_states.clear()
+        burger.additional_options_button_states.clear()
 
     def create_modify_item_row(self, ingredient):
         ingredient_label = MDLabel(text=ingredient)
-        add_button = ToggleMDFlatButton(text='EXTRA', group=ingredient)
-        normal_button = ToggleMDFlatButton(text='NORMAL', group=ingredient)
-        remove_button = ToggleMDFlatButton(text='NONE', group=ingredient)
+        add_button = ToggleMDFlatButton(text="EXTRA", group=ingredient)
+        normal_button = ToggleMDFlatButton(text="NORMAL", group=ingredient)
+        remove_button = ToggleMDFlatButton(text="NONE", group=ingredient)
         return ingredient_label, add_button, normal_button, remove_button
 
-
     def create_default_options_row(self, option):
-        unique_group_name = f'option_{option}'
-        default_button = ToggleMDFlatButton(text='None', default_state='None', group=unique_group_name)
-        spacer = MDBoxLayout(orientation='horizontal', size_hint_x=None, width=100)
-        spacer2 = MDBoxLayout(orientation='horizontal')
-        option_button = ToggleMDFlatButton(text=option, default_state='None', group=unique_group_name)
+        unique_group_name = f"option_{option}"
+        default_button = ToggleMDFlatButton(
+            text="None", default_state="None", group=unique_group_name
+        )
+        spacer = MDBoxLayout(orientation="horizontal", size_hint_x=None, width=100)
+        spacer2 = MDBoxLayout(orientation="horizontal")
+        option_button = ToggleMDFlatButton(
+            text=option, default_state="None", group=unique_group_name
+        )
         return default_button, spacer, spacer2, option_button
-
 
     def open_add_order_popup(self):
         layout = MDGridLayout(
             orientation="tb-lr", rows=2, padding=[10, 10, 10, 10], spacing=10
         )
         inner_layout = MDGridLayout(
-            orientation="lr-tb", cols=3, padding=[10, 10, 10, 10], spacing=10
+            orientation="lr-tb", cols=4, padding=[10, 10, 10, 10], spacing=10
         )
         left_layout = MDGridLayout(
             orientation="lr-tb", rows=10, cols=3, padding=[10, 10, 10, 10], spacing=10
@@ -353,27 +393,31 @@ class BurgerApp(MDApp):
         )
         self.populate_order_popup_right_layout(right_layout)
 
+        separator = MDBoxLayout(orientation='vertical', size_hint_x=None, width=5, md_bg_color='blue', size_hint_y=1)
+        inner_layout.add_widget(separator)
         inner_layout.add_widget(right_layout)
 
         layout.add_widget(inner_layout)
 
-        button_layout = MDGridLayout(orientation="lr-tb", cols=1, size_hint_y=0.1)
+        button_layout = MDGridLayout(orientation="lr-tb", cols=2, size_hint_y=0.1)
 
         self.name_text_input = TextInput()
 
         button = MDFlatButton(
-            text="Confirm", line_color="white", on_release=self.confirm_order
+            text="Confirm", line_color="white", on_release=self.confirm_order, size_hint=(1,1)
         )
         button_layout.add_widget(button)
-
+        self.order_total = MDLabel(text='', halign='center')
+        button_layout.add_widget(self.order_total)
         layout.add_widget(button_layout)
 
         self.add_order_popup = Popup(
             content=layout,
             overlay_color=(0, 0, 0, 0),
             separator_height=0,
+            title='',
             size_hint=(0.4, 0.8),
-            # on_dismiss=self.reset_order_id,
+
         )
         self.add_order_popup.open()
 
@@ -392,7 +436,9 @@ class BurgerApp(MDApp):
                     text="Add",
                     _min_height=60,
                     line_color="white",
-                    on_release=lambda x, burger=burger: self.add_item_to_order(burger.clone()),
+                    on_release=lambda x, burger=burger: self.add_item_to_order(
+                        burger.clone()
+                    ),
                 )
             )
             layout.add_widget(
@@ -400,17 +446,18 @@ class BurgerApp(MDApp):
                     text="Modify",
                     _min_height=60,
                     line_color="white",
-                    on_release=lambda x, burger=burger: self.open_modify_item_popup(burger.clone()),
+                    on_release=lambda x, burger=burger: self.open_modify_item_popup(
+                        burger.clone()
+                    ),
                 )
             )
 
     def add_item_to_order(self, burger: Burger):
-        print(f"Inside add_item_to_order ID of burger object: {id(burger)}")
-        print("burger, added ing:", burger.added_ingredients,"\n","removed ing",burger.removed_ingredients,"\n")
+
         if self.current_order is None:
             self.current_order = Order(order_id=str(uuid.uuid4()))
         self.current_order.add_burger(burger)
-        # print(self.current_order.burgers)
+        self.order_total.text = str(self.current_order.total_price())
         self.update_right_side_order_contents()
 
     def update_right_side_order_contents(self):
@@ -423,14 +470,29 @@ class BurgerApp(MDApp):
             name = burger.name
             single_item_price = burger.price
             price = single_item_price * count
-            display_info.append((name, single_item_price, count, price))
+            # ingredient_info = ''
+            ingredient_info = []
 
-        for index, (name, single_item_price, count, price) in enumerate(
+            if burger.removed_ingredients:
+                ingredient_info.append("No " + ", ".join(burger.removed_ingredients))
+
+            if burger.added_ingredients:
+                ingredient_info.append("Add: " + ", ".join(burger.added_ingredients))
+
+            if burger.additional_options:
+                ingredient_info.append("" + ", ".join(burger.additional_options))
+
+            # if ingredient_info:
+            ingredient_info_str = " | ".join(ingredient_info) if ingredient_info else ''
+            display_info.append((name, single_item_price, count, price, ingredient_info_str))
+
+        for index, (name, single_item_price, count, price, ingredient_info_str) in enumerate(
             display_info, start=1
         ):
             item_attr = getattr(self, f"item_{index}", None)
             if item_attr:
-                item_attr.text = f"{name} {single_item_price} * {count} = {price}"
+                item_attr.text = f"{count}x {name} {price}\n{ingredient_info_str}"
+
 
     def clear_right_side_widgets(self):
         for i in range(1, 11):  # Magic numbers yo
@@ -457,8 +519,8 @@ class BurgerApp(MDApp):
     def update_order_widget(self, order_widget, order_button, order_instance):
         order_string = self.construct_order_display(order_instance)
         order_widget.text = order_string
-        order_button.text = 'Order Complete'
-        order_button.line_color = 'white'
+        order_button.text = "Order Complete"
+        order_button.line_color = "white"
         order_button.on_release = (
             lambda order_id=order_instance.order_id: self.order_complete(
                 order_id=order_id
@@ -468,9 +530,16 @@ class BurgerApp(MDApp):
     def construct_order_display(self, order_instance):
         order_string = ""
         identical_burgers = order_instance.count_identical_burgers()
-        for burger, count in identical_burgers.items(): # COLOR
-            order_string += f"[color=#ffff00]\n{burger.name}[/color] x{count}\n[size=14]{self.get_ingredient_modifications(burger)}[/size]\n"
+        for burger, count in identical_burgers.items():  # COLOR
+            order_string += f"[color=#ffea2e]\n{burger.name}[/color] x{count}\n[size=14]{self.get_ingredient_modifications(burger)}\n{self.get_additional_options(burger)}[/size]\n"
         return order_string
+
+    def get_additional_options(self, burger):
+        additional_options =[]
+        if burger.additional_options:
+            for option in burger.additional_options:
+                additional_options.append(f'[color=00ff00]ADD {option}[/color]')
+        return "\n".join(additional_options)
 
     def get_ingredient_modifications(self, burger):
         add_items, remove_items = burger.display_modifications()
@@ -481,7 +550,9 @@ class BurgerApp(MDApp):
                     if ing in remove_items:
                         modified_ingredients.append(f"[color=ff0000]NO {ing}[/color]")
                     elif ing in add_items:
-                        modified_ingredients.append(f"[color=00ff00]EXTRA {ing}[/color]")
+                        modified_ingredients.append(
+                            f"[color=00ff00]EXTRA {ing}[/color]"
+                        )
                     else:
                         modified_ingredients.append(ing)
         return "\n".join(modified_ingredients)
@@ -541,17 +612,35 @@ class BurgerApp(MDApp):
 
     def get_default_options(self):
 
-        default_options = ['Gluten Free Bun', 'Vegan', 'Plain']
+        default_options = ["Gluten Free Bun", "Vegan", "Plain"]
         return default_options
 
     def populate_menu(self):
         menu = Menu()
         burgers_data = [
-        ("The Revolt (Single)", 12.00, ["Two Patties", "Rebel Sauce", "One Cheese", "Arugula", "Roma Tomato"]),
-        ("The Revolt (Double)", 14.00, ["Two Patties", "Rebel Sauce", "Two Cheese", "Arugula", "Roma Tomato"]),
-        ("The Hexxor", 14.00, ["Two Patties", "Avocado Bacon Sauce", "Cheese", "Arugula", "Red Onion"]),
-        ("The Sham-moo", 14.00, ["Vegan Patty", "Tomato Pesto", "Arugula"]),
-        ("Hot Texan", 5.00, ["Hot dog", "Chili Sauce", "Mustard", "Onion"])
+            (
+                "The Revolt (Single)",
+                12.00,
+                ["Two Patties", "Rebel Sauce", "One Cheese", "Arugula", "Roma Tomato"],
+            ),
+            (
+                "The Revolt (Double)",
+                14.00,
+                ["Two Patties", "Rebel Sauce", "Two Cheese", "Arugula", "Roma Tomato"],
+            ),
+            (
+                "The Hexxor",
+                14.00,
+                [
+                    "Two Patties",
+                    "Avocado Bacon Sauce",
+                    "Cheese",
+                    "Arugula",
+                    "Red Onion",
+                ],
+            ),
+            ("The Sham-moo", 14.00, ["Vegan Patty", "Tomato Pesto", "Arugula"]),
+            ("Hot Texan", 5.00, ["Hot dog", "Chili Sauce", "Mustard", "Onion"]),
         ]
         for name, price, ingredients in burgers_data:
             burger = Burger(name, price, ingredients)
@@ -559,23 +648,23 @@ class BurgerApp(MDApp):
 
         return menu
 
+
 class ToggleMDFlatButton(MDFlatButton):
-    selected_color = StringProperty('white')
+    selected_color = StringProperty("white")
     normal_color = ListProperty([0, 0, 0, 1])
     group = StringProperty(None)
     default_state = StringProperty()
     is_selected = BooleanProperty(False)
 
-
-    def __init__(self, default_state='NORMAL', **kwargs):
+    def __init__(self, default_state="NORMAL", **kwargs):
         self.default_state = default_state
         super().__init__(**kwargs)
-        self.theme_text_color = 'Custom'
+        self.theme_text_color = "Custom"
         self._no_ripple_effect = True
 
         if self.text == self.default_state:
             self.md_bg_color = [1, 1, 1, 1]  # white
-            self.text_color = [0, 0, 0, 1]   # black
+            self.text_color = [0, 0, 0, 1]  # black
             self.is_selected = True
         else:
             self.md_bg_color = [0, 0, 0, 1]
